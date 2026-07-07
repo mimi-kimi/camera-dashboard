@@ -1,13 +1,28 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
+
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Missing Supabase environment variables!')
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 export async function GET() {
-  console.log('=== API: Fetching snapshots ===')
+  console.log('📸 API: Fetching snapshots...')
   
   try {
-    // Test the connection first
-    console.log('Checking Supabase connection...')
-    
+    // Check if Supabase is configured
+    if (!supabaseUrl || !supabaseKey) {
+      return NextResponse.json(
+        { error: 'Supabase not configured' },
+        { status: 500 }
+      )
+    }
+
     const { data, error } = await supabase
       .from('camera_snapshots')
       .select('*')
@@ -15,18 +30,18 @@ export async function GET() {
       .limit(50)
 
     if (error) {
-      console.error('Supabase error:', error)
+      console.error('❌ Supabase error:', error)
       return NextResponse.json(
-        { error: error.message || 'Database error' },
+        { error: error.message },
         { status: 500 }
       )
     }
 
-    console.log(`Found ${data?.length || 0} snapshots`)
+    console.log(`✅ Found ${data?.length || 0} snapshots`)
     return NextResponse.json(data || [])
     
   } catch (error) {
-    console.error('API error:', error)
+    console.error('❌ API error:', error)
     return NextResponse.json(
       { error: error.message || 'Server error' },
       { status: 500 }
