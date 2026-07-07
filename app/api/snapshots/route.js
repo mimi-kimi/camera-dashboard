@@ -1,25 +1,34 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-const supabase = createClient(supabaseUrl, supabaseKey)
+import { supabase } from '@/lib/supabase'
 
 export async function GET() {
+  console.log('=== API: Fetching snapshots ===')
+  
   try {
+    // Test the connection first
+    console.log('Checking Supabase connection...')
+    
     const { data, error } = await supabase
       .from('camera_snapshots')
       .select('*')
       .order('timestamp', { ascending: false })
       .limit(50)
 
-    if (error) throw error
+    if (error) {
+      console.error('Supabase error:', error)
+      return NextResponse.json(
+        { error: error.message || 'Database error' },
+        { status: 500 }
+      )
+    }
 
-    return NextResponse.json(data)
+    console.log(`Found ${data?.length || 0} snapshots`)
+    return NextResponse.json(data || [])
+    
   } catch (error) {
-    console.error('Error fetching snapshots:', error)
+    console.error('API error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch snapshots' },
+      { error: error.message || 'Server error' },
       { status: 500 }
     )
   }
